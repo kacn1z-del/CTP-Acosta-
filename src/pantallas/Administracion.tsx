@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { Curso, Nivel, Periodo, Rol, Usuario } from "../types";
 import { obtenerCursos, obtenerPreregistros, obtenerUsuarios, type Preregistro } from "../lib/datos";
-import { crearCurso, guardarNota, guardarPreregistro } from "../lib/admin";
+import { crearCurso, eliminarPreregistro, guardarNota, guardarPreregistro } from "../lib/admin";
 import { notaValida } from "../lib/mep";
 import "../estilos-admin.css";
 
@@ -115,6 +115,11 @@ export default function Administracion({ onSalir }: Props) {
       },
       "Persona registrada. Al entrar con su correo, su perfil se creará con el rol asignado."
     );
+  }
+
+  function eliminarPendiente(correoPendiente: string) {
+    if (!window.confirm(`¿Eliminar el preregistro de ${correoPendiente}?`)) return;
+    ejecutar(() => eliminarPreregistro(correoPendiente), "Preregistro eliminado.");
   }
 
   function guardarCursoForm(e: FormEvent) {
@@ -243,6 +248,14 @@ export default function Administracion({ onSalir }: Props) {
                   {p.correo} · {ETIQUETA_ROL[p.rol]}
                   {p.nivel ? ` · ${p.nivel}°` : ""}
                 </small>
+                <button
+                  className="boton secundario"
+                  style={{ marginTop: 8 }}
+                  onClick={() => eliminarPendiente(p.correo)}
+                  disabled={enviando}
+                >
+                  Eliminar
+                </button>
               </div>
             ))}
           </section>
