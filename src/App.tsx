@@ -1,66 +1,99 @@
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "./lib/firebase";
 import { escucharSesion, iniciarSesion, cerrarSesion } from "./lib/auth";
+import { obtenerPerfil } from "./lib/datos";
 import type { Usuario } from "./types";
+import Inicio from "./pantallas/Inicio";
+import "./estilos.css";
 
 export default function App() {
   const [usuarioAuth, setUsuarioAuth] = useState<User | null>(null);
   const [perfil, setPerfil] = useState<Usuario | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const quitar = escucharSesion(async (user) => {
       setUsuarioAuth(user);
-      if (user) {
-        const snap = await getDoc(doc(db, "usuarios", user.uid));
-        setPerfil(snap.exists() ? (snap.data() as Usuario) : null);
-      } else {
+      try {
+        setPerfil(user ? await obtenerPerfil(user.uid) : null);
+      } catch (e) {
+        console.error(e);
         setPerfil(null);
+        setError("No se pudo cargar tu perfil.");
+      } finally {
+        setCargando(false);
       }
-      setCargando(false);
     });
     return quitar;
   }, []);
 
   async function entrar() {
     setError(null);
+    setEnviando(true);
     try {
       await iniciarSesion();
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo iniciar sesión.");
+    } finally {
+      setEnviando(false);
     }
   }
 
-  if (cargando) return <p style={{ padding: 24 }}>Cargando...</p>;
+  if (cargando) {
+    return (
+      <div className="pagina centrado">
+        <p className="vacio">Cargando...</p>
+      </div>
+    );
+  }
 
   if (!usuarioAuth) {
     return (
-      <main style={{ padding: 24, textAlign: "center" }}>
+      <div className="pagina centrado">
         <h1>Campus CTP Acosta</h1>
-        <p>Ingresa con tu correo institucional.</p>
-        <button onClick={entrar}>Iniciar sesión</button>
-        {error && <p style={{ color: "crimson" }}>{error}</p>}
-      </main>
+        <p className="vacio">Ingresa con tu correo institucional.</p>
+        <button className="boton" onClick={entrar} disabled={enviando}>
+          {enviando ? "Entrando..." : "Iniciar sesión"}
+        </button>
+        {error && <p className="error">{error}</p>}
+      </div>
     );
   }
 
   if (!perfil) {
     return (
-      <main style={{ padding: 24 }}>
+      <div className="pagina centrado">
         <p>Tu cuenta aún no tiene un rol asignado. Consulta con administración.</p>
-        <button onClick={cerrarSesion}>Salir</button>
-      </main>
+        {error && <p className="error">{error}</p>}
+        <button className="boton secundario" onClick={cerrarSesion}>
+          Salir
+        </button>
+      </div>
     );
   }
 
+  if (perfil.rol === "estudiante") {
+    return <Inicio perfil={perfil} onSalir={cerrarSesion} />;
+  }
+
   return (
-    <main style={{ padding: 24 }}>
-      <h1>Hola, {perfil.nombre}</h1>
-      <p>Rol: {perfil.rol}</p>
-      <button onClick={cerrarSesion}>Salir</button>
-    </main>
+    <div className="pagina">
+      <header className="encabezado">
+        <div>
+          <h1>Hola, {perfil.nombre}</h1>
+          <p>Rol: {perfil.rol}</p>
+        </div>
+        <button className="boton secundario" onClick={cerrarSesion}>
+          Salir
+        </button>
+      </header>
+      <section className="tarjeta">
+        <p className="vacio">
+          El panel de {perfil.rol === "profesor" ? "profesores" : "administración"} está en construcción.
+        </p>
+      </section>
+    </div>
   );
 }
