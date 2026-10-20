@@ -66,6 +66,9 @@ export default function App() {
     return (
       <div className="pagina centrado">
         <p>Tu cuenta aún no tiene un rol asignado. Consulta con administración.</p>
+        <p className="vacio" style={{ fontFamily: "monospace", wordBreak: "break-all" }}>
+          UID: {usuarioAuth.uid}
+        </p>
         {error && <p className="error">{error}</p>}
         <button className="boton secundario" onClick={cerrarSesion}>
           Salir
