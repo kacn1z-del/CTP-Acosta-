@@ -5,11 +5,13 @@ import {
   type User,
 } from "firebase/auth";
 import { auth, googleProvider } from "./firebase";
-import { DOMINIOS_INSTITUCIONALES } from "../config";
+import { DOMINIOS_INSTITUCIONALES, CORREOS_DE_PRUEBA } from "../config";
 
 export function esCorreoInstitucional(correo: string | null | undefined): boolean {
   if (!correo) return false;
-  const dominio = correo.split("@")[1]?.toLowerCase();
+  const minuscula = correo.toLowerCase();
+  if (CORREOS_DE_PRUEBA.includes(minuscula)) return true;
+  const dominio = minuscula.split("@")[1];
   return !!dominio && DOMINIOS_INSTITUCIONALES.includes(dominio);
 }
 
