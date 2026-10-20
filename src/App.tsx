@@ -1,10 +1,25 @@
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { escucharSesion, iniciarSesion, cerrarSesion } from "./lib/auth";
-import { obtenerPerfil } from "./lib/datos";
+import { obtenerPerfil, obtenerPreregistro } from "./lib/datos";
+import { activarPreregistro } from "./lib/admin";
 import type { Usuario } from "./types";
 import Inicio from "./pantallas/Inicio";
+import Administracion from "./pantallas/Administracion";
 import "./estilos.css";
+
+// Si la persona no tiene perfil pero fue preregistrada, se crea su perfil ahora.
+async function cargarPerfil(user: User): Promise<Usuario | null> {
+  let perfil = await obtenerPerfil(user.uid);
+  if (!perfil) {
+    const pre = await obtenerPreregistro(user.email ?? "");
+    if (pre) {
+      await activarPreregistro(user, pre);
+      perfil = await obtenerPerfil(user.uid);
+    }
+  }
+  return perfil;
+}
 
 export default function App() {
   const [usuarioAuth, setUsuarioAuth] = useState<User | null>(null);
@@ -17,11 +32,11 @@ export default function App() {
     const quitar = escucharSesion(async (user) => {
       setUsuarioAuth(user);
       try {
-        setPerfil(user ? await obtenerPerfil(user.uid) : null);
+        setPerfil(user ? await cargarPerfil(user) : null);
       } catch (e) {
         console.error(e);
         setPerfil(null);
-        setError("No se pudo cargar tu perfil.");
+        setError(`No se pudo cargar tu perfil: ${e instanceof Error ? e.message : String(e)}`);
       } finally {
         setCargando(false);
       }
@@ -78,6 +93,10 @@ export default function App() {
     return <Inicio perfil={perfil} onSalir={cerrarSesion} />;
   }
 
+  if (perfil.rol === "administrativo") {
+    return <Administracion onSalir={cerrarSesion} />;
+  }
+
   return (
     <div className="pagina">
       <header className="encabezado">
@@ -90,9 +109,7 @@ export default function App() {
         </button>
       </header>
       <section className="tarjeta">
-        <p className="vacio">
-          El panel de {perfil.rol === "profesor" ? "profesores" : "administración"} está en construcción.
-        </p>
+        <p className="vacio">El panel de profesores está en construcción.</p>
       </section>
     </div>
   );
