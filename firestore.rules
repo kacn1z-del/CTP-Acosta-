@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function esInstitucional() {
+      return request.auth != null
+        && request.auth.token.email != null
+        && request.auth.token.email.matches('.*@mep\\.go\\.cr');
+    }
+
+    function miPerfil() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    function esAdmin() {
+      return esInstitucional() && miPerfil().rol == 'administrativo';
+    }
+
+    function esPersonal() {
+      return esInstitucional() && (miPerfil().rol == 'profesor' || miPerfil().rol == 'administrativo');
+    }
+
+    // Cada usuario lee su propio perfil. Solo administración crea o cambia roles.
+    match /usuarios/{uid} {
+      allow read: if esInstitucional() && (request.auth.uid == uid || esAdmin());
+      allow create, update, delete: if esAdmin();
+    }
+
+    // Avisos: todos los usuarios institucionales leen. Solo administración publica.
+    match /avisos/{avisoId} {
+      allow read: if esInstitucional();
+      allow create, update, delete: if esAdmin();
+    }
+
+    // Cursos: todos leen. Profesores y administración crean o editan.
+    match /cursos/{cursoId} {
+      allow read: if esInstitucional();
+      allow write: if esPersonal();
+    }
+
+    // Notas: el estudiante lee solo las suyas. Personal escribe.
+    match /notas/{notaId} {
+      allow read: if esInstitucional() && (resource.data.estudianteId == request.auth.uid || esPersonal());
+      allow write: if esPersonal();
+    }
+
+    // Evaluaciones: todos leen. Personal escribe.
+    match /evaluaciones/{evalId} {
+      allow read: if esInstitucional();
+      allow write: if esPersonal();
+    }
+  }
+}
