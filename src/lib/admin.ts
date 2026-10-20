@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, setDoc } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, setDoc } from "firebase/firestore";
 import type { User } from "firebase/auth";
 import { db } from "./firebase";
 import type { Nivel, Periodo, Rol } from "../types";
@@ -9,6 +9,10 @@ export async function guardarPreregistro(correo: string, nombre: string, rol: Ro
   const datos: { nombre: string; rol: Rol; nivel?: Nivel } = { nombre: nombre.trim(), rol };
   if (nivel !== undefined) datos.nivel = nivel;
   await setDoc(doc(db, "preregistros", id), datos);
+}
+
+export async function eliminarPreregistro(correo: string) {
+  await deleteDoc(doc(db, "preregistros", correo.trim().toLowerCase()));
 }
 
 export async function crearCurso(
