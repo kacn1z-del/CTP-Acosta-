@@ -1,8 +1,6 @@
 // Dominios de correo institucional permitidos.
 export const DOMINIOS_INSTITUCIONALES = ["mep.go.cr"];
-
 // Correos de prueba. Quitar antes de entregar al colegio.
-export const CORREOS_DE_PRUEBA = ["kchinchilla.pos@gmail.com"];
-
+export const CORREOS_DE_PRUEBA = ["kchinchilla.pos@gmail.com", "kacn1z@gmail.com"];
 // Nota mínima de aprobación. Confirmar con el reglamento vigente del MEP.
 export const NOTA_MINIMA_APROBACION = 70;
